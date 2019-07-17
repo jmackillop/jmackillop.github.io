@@ -13,9 +13,9 @@ categories: lob data
 
 Due to the complex nature of the LOB system, it is necessary to make simplifying assumptions in order to be able to model the system. One of the key assumptions to be made is the origination of the orders, that is what is driving the order flow. Often it is assumed that the market consists of perfectly rational traders, who each try to maximise their own utility. Here we will instead focus on the zero-intelligence approach to modelling LOBs, led by physicists and mathematicians, which makes no such assumptions on the agents in the market, but rather assumes that they act randomly. Order flows are then directly modelled using stochastic processes, allowing for more tractable verification and simulation than other approaches. While the assumption of zero-intelligence is clearly a gross oversimplification, it provides an avenue to useful results, as will be demonstrated. As the statistician <a href="https://en.wikipedia.org/wiki/George_E._P._Box">George Box</a> is credited with having said, "All models are wrong, but some are useful."
 
-From a historical point of view, <a href="http://www.numdam.org/article/ASENS_1900_3_17__21_0.pdf"> Louis Bachelier </a> is frequently credited with being the first to apply a mathematical, and more specifically, stochastic framework to finance . With the introduction of LOBs and their gradual replacement of quote-driven markets, discrete-time stochastic models for LOBs were <a href="https://arxiv.org/pdf/cond-mat/0106114.pdf">introduced at</a> the <a href="https://www.academia.edu/316653/Simple_Model_of_a_Limit_Order-Driven_Market">turn of the millennium</a>and the first continuous time LOB model was developed by <a href="http://tuvalu.santafe.edu/~desmith/PDF_pubs/e108102.pdf"> Daniels et. al. in 2003</a>. Various advancements and improvements to continuous time models have been made since then, some of which we will look at here.
+From a historical point of view, <a href="http://www.numdam.org/article/ASENS_1900_3_17__21_0.pdf"> Louis Bachelier </a> is frequently credited with being the first to apply a mathematical, and more specifically, stochastic framework to finance . With the introduction of LOBs and their gradual replacement of quote-driven markets, discrete-time stochastic models for LOBs were <a href="https://arxiv.org/pdf/cond-mat/0106114.pdf">introduced at</a> the <a href="https://www.academia.edu/316653/Simple_Model_of_a_Limit_Order-Driven_Market">turn of the millennium</a> and the first continuous time LOB model was developed by <a href="http://tuvalu.santafe.edu/~desmith/PDF_pubs/e108102.pdf"> Daniels et. al. in 2003</a>. Various advancements and improvements to continuous time models have been made since then, some of which we will look at here.
 
-<h1> LOB basics </h1>
+<h2 class="heading"> LOB basics </h2>
 We now provide a brief overview of how markets employing a LOB function, and some common terminology that will be used. 
 
 Any trader participating in such a market can submit a buy (respectively sell) <strong>order</strong> $$x$$ at time $$t_x$$ with price $$p_x$$ and size $$\omega_x$$. This is a commitment to buy (resp. sell) $$\omega_x$$ quantity of the underlying asset at a price per unit less (resp. more) than or equal to $$p_x$$. The <strong>lot size</strong> is the smallest quantity of the asset that may be traded, and all order sizes must be multiples of it. The <strong>tick size</strong>, $$\delta$$, is the smallest allowed difference in price between orders, and all order prices must be a multiple of the tick size. In USD denominated stock markets, the tick size is frequently $0.01, although this varies, and is frequently several orders of magnitude smaller in markets such as foreign exchange. The <strong>bid price</strong> at time $$t$$, $$b(t)$$,  is the largest price among the buy orders that are on the book at time $$t$$, and similarly the <strong>ask price</strong> $$a(t)$$ is the smallest among the sell orders. The <strong>bid-ask spread</strong>, commonly referred to as the spread, is the difference between the bid price and the ask price. The <strong>mid price</strong>, $$m(t)$$, at time $$t$$ is defined to be the mid point between the bid price and the ask price, that is $$m(t)= \frac{a(t)+b(t)}{2}$$
@@ -27,3 +27,136 @@ When a market order arrives, the limit orders to be executed against are chosen 
 This is summarised in the figure below.
 ![Figure 1](/assets/images/Generic_LOB_plot.jpeg) 
 The bid queues are in green and the ask queues are in red. In this case, the lot size is 1 and $$\delta = 0.01$$. The bid-ask spread is 2 ticks as $$a(t)-b(t) = 1.06-1.04 = 2\delta$$. If a buy order of size 2 is submitted at price $1.04, shown in blue, then it will be added to the order book at $1.04 because 1.04 < a(t). If the buy order had instead been submitted at a price $1.06, it would have executed against the ask limit orders, and reduced the ask price queue to size 4-2=2.
+
+<h2 class="heading">A basic model </h2>
+
+We now turn our attention to the stochastic model proposed by <a href="https://hal.archives-ouvertes.fr/hal-00552252/document">Cont and Larrard</a>. Cont and Larrard note that a greatly simplified model can be created by focusing on the level-1 process, that is to say the best bid and ask queues. The remaining bid and ask queues are then thought of as a `reservoir' of which only the distribution of the next-to-best queues is explicitly modelled. This model allows us to explicitly calculate various quantities of interest such as the distribution of the duration of time until the next move up in price, the probability of a price increase, and the autocorrelation of price changes.
+
+We first introduce some terminology and describe the setup of the model. All quantities are at time t unless otherwise specified. We model the state of the order book in the following way. Recall we denote the bid price by $$b(t)$$ and the ask price by $$a(t)$$. The size of the bid queue at the bid price is $$q^{b} _{t}$$ and the size of the ask queue at the ask price is $$q^{a} _{t}$$. Cont and Larrard note that for their data, the bid-ask spread is approximately 99% of the time a single tick, so they make the simplifying assumption that the spread is always one tick. The state of the entire order book, at time t, can then be written as $$X_{t} = (b(t), q^{b} _{t}, q^{a} _{t}).$$
+
+We now describe the dynamics of the model. As $$X_{t}$$ simply represents the state of the order book, it can only be modified by limit orders, market orders, and order cancellations. Cont and Larrard assume that these events are governed by independent Poisson processes, so that buy limit orders arrive independently at the bid price $$b(t)$$ at exponential rate $$\lambda$$, buy market orders arrive independently at the bid price at exponential rate $$\mu$$, and cancellations at the bid price occur at exponential rate $$\theta$$ (and similarly at the ask price). We further assume that all orders are of unit size. Once one of the best queues is depleted, the second-best queue will become the new best queue and so the price will shift. If for example the best bid queue is depleted, then the second-best bid queue becomes the new best bid queue, and the price shifts downwards. We assume that the spread is only instantaneously of size 2 ticks, and that it closes to 1 tick in a negligible amount of time. 
+
+Rather than keeping track of the size of the queues at all price levels, we model the best queues immediately after a price change as stationary variables drawn from a distribution $$\it{f}$$ on $$\mathbb{N} ^2$$. In order to simplify, we assume $$\it{f}$$ is symmetric, so that the distribution is the same on the bid and ask side. We then have that $$\it{f}(x,y)$$ denotes the probability of observing $$q^{b} _{t} = x$$ and $$q^{a} _{t} = y$$ immediately after the depletion of a best queue. We also assume that the distribution $$\it{f}$$ is not dependent on the previous history of the price and order book events, so that the process $$(q^b_t, q^a_t)$$ is in fact a Markov process.
+
+<h3 class="subheading">Some analytical results</h3>
+
+We'll now get a flavour of the results that can be derived using this framework, and then prove the diffusion limit.
+<h4 class="subsubheading">Conditional distribution of price changes</h4> \label{2samedirection}
+On a small time scale, the dynamics of the price are given by a piecewise right continuous with left limits ("<a href="https://en.wikipedia.org/wiki/C%C3%A0dl%C3%A0g">cadlag</a>") process $$(s_t, t \geq 0)$$, so that jump times of $$s_t$$ correspond to changes in the price. Let the vector $$\left( X_1, X_2, ...\right)$$ denote the directions of the successive price changes by $$\pm 1$$, and define, for $$n\geq1$$, the sum $$Z_n = \sum_{i=1}^{n} X_i$$. If $$N_t$$ represents the number of price changes that occur up to time $$t$$, then $$s_t = \delta Z_{N_t}$$. 
+
+Write $$p_{same}$$ to represent the probability of two successive price changes being in the same direction, and $$p^n_{up} (x,y)$$ to represent the probability that the $$n^{th}$$ price change will be up given $$q^b_t = x$$ and $$q^a_t = y$$ (i.e. the current state of the book). <a href="https://hal.archives-ouvertes.fr/hal-00552252/document">Cont and Larrard</a> then use a recurrence relation to show that
+
+$$ p^n_{up}(x,y) = \frac{1+(2p_{same}-1)^{n-1}(2p^1_{up} - 1)}{2}$$
+
+which gives the probability for the $$n^{th}$$ price change to be an increase, given the current state of the book.
+
+<h4 class="subsubheading"> Diffusion limit of the price process</h4> \label{clresult}
+We now consider the dynamics over a much longer time scale than the time between consecutive order book events, of the order of tens of minutes. Over this time scale, the dynamics are modelled by a diffusive process. Following <a href="https://hal.archives-ouvertes.fr/hal-00552252/document">this paper</a>, we consider the case where order flows are balanced, that is the rate of arrival of limit orders is equal to the rate of arrival of cancellations and market orders. Let $$D(f)$$ be such that 
+
+$$ D(f) = \sum_{i=1}^{\infty} \sum_{j=1}^{\infty} ijf(i,j) < \infty $$ 
+
+so that $$D(f)$$ is effectively a measure of market depth. This is because it is the expected value of the product of the best queue sizes immediately after a price change, and so a higher value for $$D(f)$$ implies greater expected queue sizes after a price change, and so greater market depth.
+
+Let $$\tau_1, \tau_2, \tau_3,...$$ denote the times between consecutive price changes. It can then be <a href="https://hal.archives-ouvertes.fr/hal-00552252/document">proved</a> that the sequence of durations $$(\tau_1, \tau_2, \tau_3,...)$$ satisfies 
+
+$$ \frac{\tau_1 + \tau_2 + ... + \tau_k}{k \log k} \xrightarrow{k \rightarrow \infty} \frac{D(f)}{\pi \lambda} \qquad \textrm{almost surely}$$ 
+
+Note that this result is slightly different to a Strong Law of Large Numbers (SLLN) type result due to the $$\log k$$ in the denominator. This is necessary to achieve convergence because the expected value of $$\tau_i$$ is unbounded, and so a typical SLLN type result would not apply.
+
+Let $$N_t$$ represent the number of price changes that occur up to time $$t$$, or more formally 
+
+$$N_t = \sup \{\ k\hspace{10pt} |\hspace{10pt} \tau_1 + \tau_2 + ... + \tau_k \leq t \}$$
+
+As $$N_t$$ is the number of price changes in the interval $$[0, t]$$, it follows that if we write $$t_n = tn \log n$$, we have $$N_{t_n}$$ is the number of price changes in the interval $$[0, tn \log n]$$. Setting $$k=N_{t_n}$$ in the limit above yields 
+
+$$ \frac{\tau_1 + \tau_2 + ... + \tau_{N_{t_n}}}{N_{t_n} \log N_{t_n}} \xrightarrow{n \rightarrow \infty} \frac{D(f)}{\pi \lambda} \qquad \textrm{a.s.}$$ 
+
+But from the definition of $$N_t$$ it follows that $$\tau_1 + \tau_2 + ... + \tau_{N_{t_n}} = t_n$$, so we have
+
+$$ \frac{t_n}{N_{t_n} \log N_{t_n}} \xrightarrow{n \rightarrow \infty} \frac{D(f)}{\pi \lambda} \qquad \textrm{a.s.}$$
+
+Rearranging, we then have that
+
+$$ N_{t_n} \log N_{t_n} \approx \frac{\pi \lambda t_n}{D(f)} \qquad \textrm{for large n}$$
+
+Define $$\rho : (1, \infty) \rightarrow (1, \infty)$$ to be the inverse function of $$t \mapsto t \log t $$, so that
+
+$$ \forall t >1, \quad \rho(t)\log \rho(t) = t$$
+
+For large $$t$$, we then have that $$\rho(t) \approx \frac{t}{\log t}$$, which can be seen by considering the fraction under repeated substitution of $$\rho (t)$$ into the log term. Applying $$\rho$$ to $$N_{t_n} \log N_{t_n}$$ gives $$N_{t_n}$$, so we have that
+
+$$N_{t_n} \approx \rho \left( \frac{\pi \lambda t_n}{D(f)} \right) \qquad \textrm{for large n}$$
+
+But using the approximate value of $$\rho(t)$$ for large t,
+
+$$ \rho \left( \frac{\pi \lambda t_n}{D(f)} \right) \approx \frac{ \left( \frac{\pi \lambda t_n}{D(f)} \right)}{\log(\frac{\pi \lambda t_n}{D(f)})} \qquad \textrm{for large n}$$
+
+And so because $$t_n$$ is defined as $$tn \log n$$,
+
+$$  \rho \left( \frac{\pi \lambda t_n}{D(f)} \right) \approx \frac{\pi \lambda tn \log n}{D(f)} \cdot \frac{1}{\log( \frac{\pi \lambda t n \log n}{D(f)})} \qquad \textrm{for large n}$$
+
+Noting that $$\frac{\pi \lambda t}{D(f)}$$ is a constant,
+
+$$\rho \left( \frac{\pi \lambda t_n}{D(f)} \right) \approx \frac{\pi \lambda tn \log n}{D(f)} \cdot \frac{1}{\log( n \log n)} \qquad \textrm{for large n}$$
+
+This can be simplified further by noting that $$ \log(n \log n) \approx \log n$$ for large n so that
+
+$$\rho \left( \frac{\pi \lambda t_n}{D(f)} \right) \approx \frac{\pi \lambda tn}{D(f)} \qquad \textrm{for large n}$$
+
+We thus arrive at the following proposition.
+
+<i><b>Proposition 1:</b>
+For large $$n$$, the asymptotic behaviour of $$N_{t_n}$$ , defined as the number of price changes in the interval $$[0, tn \log n]$$, is given by </i>
+
+$$ N_{t_n} \approx \frac{\pi \lambda t}{D(f)}n$$
+
+This shows that for large $$n$$, the number of price changes occurring in the time period $$[0, tn \log n]$$ is of order n. Furthermore, the number of price changes is proportional to $$\lambda / D(f)$$, the ratio of the rate of order flow to market depth.
+
+We now claim the following result. Recall that $$s_t$$ is a piecewise continuous cadlag process whose jumps correspond to price changes and $$\delta$$ is the tick size.
+
+<i><b>Theorem 1:</b>
+In the case of a balanced order flow (i.e. $$\lambda = \mu + \theta$$),  as $${n \rightarrow \infty}$$,</i>
+
+$$ \left( \frac{s_{nt\log n}}{\sqrt{n}}, t \geq 0 \right) \Longrightarrow \left( \delta \sqrt{\frac{ \pi \lambda}{D(f)}} W_t, t \geq 0 \right)$$
+
+<i>where $$W_t$$ is a standard Brownian motion, and where the double arrow indicates weak convergence on $$(\mathcal{D}, J_1)$$, where $$\mathcal{D}$$ denotes the space of cadlag paths equipped with the Skorokhod topology $$J_1$$.</i>
+
+<b>Proof:</b>
+Throughout we take $$t \geq 0$$. Recalling $$s_t = \delta Z(N_t)$$ from section \ref{2samedirection}, we can write 
+
+$$\begin{equation*}
+\begin{split}
+    \frac{s_{nt\log n}}{\sqrt{n}} &= \frac{s_{t_n}}{\sqrt{n}} \\
+    &= \frac{\delta Z(N_{t_n})}{\sqrt{n}} \\
+    &= \left( \frac{\delta Z(N_{t_n})}{\sqrt{n}} - \frac{\delta Z(\frac{tn \pi \lambda}{D(f)})}{\sqrt{n}} \right)+ \frac{\delta Z(\frac{tn \pi \lambda}{D(f)})}{\sqrt{n}} 
+\end{split}
+\end{equation*}$$
+
+From Proposition \ref{ppn1}, we know that $$ N_{t_n} \approx \frac{\pi \lambda t}{D(f)}n$$ for large n, so we have for $$t \geq 0$$, as $${n \rightarrow \infty}$$,
+
+$$ \left( \frac{\delta Z(N_{t_n})}{\sqrt{n}} - \frac{\delta Z(\frac{tn \pi \lambda}{D(f)})}{\sqrt{n}} \right) \Longrightarrow 0$$
+
+$$\def\lf{\left\lfloor}
+\def\rf{\right\rfloor}$$
+
+We now seek to apply <a href="https://en.wikipedia.org/wiki/Donsker%27s_theorem">Donsker's invariance principle</a> (DIP), also referred to as the functional central limit theorem, which we first state. Let $$X_i$$ be a sequence of independent and identically distributed random variables with mean $$0$$ and variance $$1$$, and  let $$Z_m = \sum_{i=1}^{m} X_i$$. We also define the rescaled random walk $$W$$ as $$W^{(m)} (k) = \frac{Z_{\lf mk \rf}}{\sqrt{m}}$$ (where $$k \in [0,1]$$), so W is essentially a partial sum process. Then as $$m \rightarrow \infty$$, the random function $$W^{(m)}$$ converges in distribution to a standard Brownian motion. Note that this is a generalisation of the SLLN, which only considers the final partial sum $$W^{(m)} (1)$$.
+
+Noting that the $$X_i$$ in our case have mean 0 and variance 1 from the definition in section \ref{2samedirection}, we can apply DIP to see $$\frac{1}{ \sqrt{m}} Z_{\lf mt \rf} \Rightarrow W_t$$, where $$W_t$$ is a standard Brownian motion, so that by taking $$m$$ to be $$n \pi \lambda / D(f)$$ we have as $${n \rightarrow \infty}$$,
+
+$$\left( \frac{Z( n t \pi \lambda / D(f) )}{\sqrt{\pi \lambda n / D(f)}}, t \geq 0 \right) \Longrightarrow \left(W_t, t \geq 0 \right)$$
+
+Rearranging,
+
+$$\left( \frac{\delta Z(tn \pi \lambda / D(f))}{ \sqrt{n}}, t\geq0 \right) \Longrightarrow \left( \delta \sqrt{\frac{\pi \lambda}{D(f)}} W_t, t\geq0 \right)$$
+
+as $${n \rightarrow \infty}$$. Substituting these results back into the expression for $$\frac{s_{nt\log n}}{\sqrt{n}}$$ at the start of this proof, we get as $${n \rightarrow \infty}$$,
+
+$$\begin{equation*}
+\begin{split}
+    \left( \frac{s_{nt\log n}}{\sqrt{n}}, t \geq 0 \right) \Longrightarrow \left( \delta \sqrt{\frac{\pi \lambda}{D(f)}} W_t, t \geq 0 \right)
+\end{split}
+\end{equation*}$$
+
+This completes the proof.
+
+This result essentially implies that the price, over a relatively long time frame $$[0, tn \log n]$$, of the order of minutes say, behaves diffusively, with a coefficient of diffusion given by $$\delta \sqrt{n\pi\lambda / D(f)}$$. This value represents the price variance, and so, in theory at least, we can use this to estimate the price volatility <i>without observing the price itself</i>. In part 2, we will take a look at whether this holds up in practice.
