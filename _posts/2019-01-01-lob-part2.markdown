@@ -1,0 +1,62 @@
+---
+layout: post
+title:  "Modelling LOBs, Part 2"
+date:   2019-01-01 15:01:26 +0100
+categories: stochastic-modelling limit-order-book data 
+---
+
+\label{continvestigation}
+
+<i>This is the second in a series of posts looking at modelling limit order books. In this post we investigate the reliability of the model discussed in <a href="httsp://jmackillop.ml/projects/lob-part1">part 1</a> </i>
+
+Our aim is to generate a plot of $$\sqrt{\lambda / D(f)}$$ against the observed volatility in order to ascertain whether the result identified in part 1 is reasonable. If the model is reasonable, then a linear trend would be expected in the plot. The full R code is available on my github <a href="https://github.com/jmackillop/Order-Book-Modelling">here.</a>
+
+<h2 class="heading">The data</h2> \label{dataintro}
+The data we have available is from LOBSTER, which provides reconstructed limit order book data for NASDAQ traded stocks. We have data for 25 of the largest stocks by market capitalisation traded on NASDAQ, for 20 levels on each side of the book. It is taken from the whole of the trading day on 1 November 2018, so from 9:30am to 4:00pm. LOBSTER generates two files for each stock, a 'message' and an `orderbook' file. The message file records when changes to the LOB occur (within 20 levels), what type of order caused the change, as well as the order size and price. The orderbook file records the state of the LOB, up to 20 levels, and its evolution over the course of the trading day. For each of these stocks, of the order of one million order book events occur over the trading day, resulting in our data recording the details of approximately 17.5 million order book events. A snapshot of the volumes for one of the 25 available stocks, Microsoft, is provided in the figure below.
+
+![Figure 1](/assets/images/MSFT_example_volume_plot.jpeg) 
+
+An example of the raw data is given below - first a few lines of the 'message' file, then a few lines of the 'orderbook' file. Note that the orderbook data actually has 20 levels available, but for brevity only 2 levels are shown here.
+{%highlight ruby %}
+> head(dataM_part)
+      Time Type  OrderID Size   Price TradeDirection
+1 34200.01    3 11465451  100 1071800             -1
+2 34200.01    4 11465551  100 1070800             -1
+3 34200.01    5        0  835 1070800              1
+4 34200.01    1 11475367  100 1048600              1
+5 34200.01    1 11475487  100 1070200              1
+6 34200.01    1 11476079  100 1048600              1
+
+
+> head(dataOB_part[,1:8])
+   ASKp1 ASKs1  BIDp1 BIDs1  ASKp2 ASKs2  BIDp2 BIDs2
+1 107.08   100 107.00   100 107.19   100 106.93   400
+2 107.19   100 107.00   100 107.23    60 106.93   400
+3 107.19   100 107.00   100 107.23    60 106.93   400
+4 107.19   100 107.00   100 107.23    60 106.93   400
+5 107.19   100 107.02   100 107.23    60 107.00   100
+6 107.19   100 107.02   100 107.23    60 107.00   100
+
+{% endhighlight %}
+
+For greater detail on the raw data see the <a href="https://lobsterdata.com/info/DataStructure.php">LOBSTER website's description.</a>
+
+<h2 class="heading">Our method</h2>
+We begin by identifying which stocks satisfy our <a href="https://jmackillop.ml/projects/lob-part1">assumption</a> of having a bid-ask spread of 1 tick. This is covered by the first half of the code in Appendix \ref{appendix for cl}.1. Appendix \ref{appendix for cl}.2 loads and prepares the data, Appendix \ref{appendix for cl}.3 rebuilds the data to level-1 only, and finally Appendix \ref{appendix for cl}.4 performs the calculation of the proportion of time the stock spends with a bid-ask spread equal to 1 tick.
+
+In the second half of the code in Appendix \ref{appendix for cl}.1, we then proceed to estimate the realised volatility of the selected stocks using the order flow data. In order to do this, Appendix \ref{appendix for cl}.5 calculates the arrival rate of limit orders, denoted by $\lambda$, Appendix \ref{appendix for cl}.6 calculates $D(f)$, a measure of market depth, and finally Appendix \ref{appendix for cl}.7 estimates volatility by calculating the standard deviation of the 10-minute bid-price logarithmic return series.
+
+
+\subsubsection{Results \& Interpretation}
+We find that only 8 of the 25 available stocks have a spread of 1 tick at least 50\% of the time. For these 8 stocks, the calculated values of $\sqrt{\lambda / D(f) }$ against volatility are plotted below in Figure \ref{fig:volplot}. We see that there is very little evidence to support the theoretical result derived above in section \ref{clresult}. The data appears to follow no discernible pattern at all, and in fact in this case, the line of best fit (in red) actually has a small negative slope. Note that while the chosen cutoff of 50\% to classify a stock as having a spread of 1 tick is somewhat arbitrary, for reasonable values this has no effect on the result.
+
+We are however hesitant to claim that the result derived by Cont and Larrard is incorrect. We have relatively few suitable data points available to us, and the relationship as plotted in \cite{contlarrard} appears to be relatively weak, with large deviations from the line of best fit for some data points. Additionally, the derived theoretical result is intuitively pleasing as we would expect measured volatility to be higher when $\lambda$ is higher (high limit order arrival rate), and lower when there is significant market depth to absorb order flow, as measured by a larger $D(f)$. It is also plausible that market dynamics have changed over the last decade, which may influence the applicability and accuracy of the model when using more recent data. 
+
+We should note however that there remain problems with the model. The primary assumption of being able to restrict to only the best queues is perhaps too restrictive, especially when many traders have access to the whole of the order book (or at least several levels). In addition, it would appear that relatively few stocks have a spread of 1 tick, which reduces the applicability of the model. In both these respects, Cont et. al.\cite{Contetal} may provide a better model, at the expense of a less simplified modelling procedure. Furthermore, the assumption of the order arrival times being governed by a Poisson process may be inaccurate, as we will see in the next section.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[scale=.5]{images/vol_from_microstructure.jpeg}
+    \caption{A plot of $\sqrt{\lambda / D(f)}$ against realised volatility for 8 stocks with spreads of 1 tick. The line of best fit is in red.}
+    \label{fig:volplot}
+\end{figure}

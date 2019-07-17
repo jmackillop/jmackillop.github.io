@@ -2,7 +2,7 @@
 layout: post
 title:  "Stochastic Modelling of Limit Order Books, Part 1"
 date:   2019-01-01 15:01:26 +0100
-categories: lob data
+categories: stochastic-modelling limit-order-book data 
 ---
 
 
