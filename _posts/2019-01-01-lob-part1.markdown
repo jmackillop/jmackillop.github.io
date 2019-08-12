@@ -41,7 +41,7 @@ Rather than keeping track of the size of the queues at all price levels, we mode
 <h3 class="subheading">Some analytical results</h3>
 
 We'll now get a flavour of the results that can be derived using this framework, and then prove the diffusion limit.
-<h4 class="subsubheading">Conditional distribution of price changes</h4> \label{2samedirection}
+<h4 class="subsubheading">Conditional distribution of price changes</h4> 
 On a small time scale, the dynamics of the price are given by a piecewise right continuous with left limits ("<a href="https://en.wikipedia.org/wiki/C%C3%A0dl%C3%A0g">cadlag</a>") process $$(s_t, t \geq 0)$$, so that jump times of $$s_t$$ correspond to changes in the price. Let the vector $$\left( X_1, X_2, ...\right)$$ denote the directions of the successive price changes by $$\pm 1$$, and define, for $$n\geq1$$, the sum $$Z_n = \sum_{i=1}^{n} X_i$$. If $$N_t$$ represents the number of price changes that occur up to time $$t$$, then $$s_t = \delta Z_{N_t}$$. 
 
 Write $$p_{same}$$ to represent the probability of two successive price changes being in the same direction, and $$p^n_{up} (x,y)$$ to represent the probability that the $$n^{th}$$ price change will be up given $$q^b_t = x$$ and $$q^a_t = y$$ (i.e. the current state of the book). <a href="https://hal.archives-ouvertes.fr/hal-00552252/document">Cont and Larrard</a> then use a recurrence relation to show that
@@ -50,7 +50,7 @@ $$ p^n_{up}(x,y) = \frac{1+(2p_{same}-1)^{n-1}(2p^1_{up} - 1)}{2}$$
 
 which gives the probability for the $$n^{th}$$ price change to be an increase, given the current state of the book.
 
-<h4 class="subsubheading"> Diffusion limit of the price process</h4> \label{clresult}
+<h4 class="subsubheading"> Diffusion limit of the price process</h4>
 We now consider the dynamics over a much longer time scale than the time between consecutive order book events, of the order of tens of minutes. Over this time scale, the dynamics are modelled by a diffusive process. Following <a href="https://hal.archives-ouvertes.fr/hal-00552252/document">this paper</a>, we consider the case where order flows are balanced, that is the rate of arrival of limit orders is equal to the rate of arrival of cancellations and market orders. Let $$D(f)$$ be such that 
 
 $$ D(f) = \sum_{i=1}^{\infty} \sum_{j=1}^{\infty} ijf(i,j) < \infty $$ 
