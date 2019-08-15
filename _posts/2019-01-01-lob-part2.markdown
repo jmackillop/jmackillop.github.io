@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Modelling LOBs, Part 2"
+title:  "Modelling LOBs Part 2: Reality check"
 date:   2019-01-01 15:01:26 +0100
 categories: stochastic-modelling limit-order-book data 
 ---
