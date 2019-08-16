@@ -1,0 +1,247 @@
+---
+layout: post
+title:  "Modelling LOBs Part 4: Order Size Distribution"
+date:   2019-06-12 15:01:26 +0100
+categories: stochastic-modelling limit-order-book data 
+---
+
+
+<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+
+<p><i>This is the fourth in a series of posts looking at modelling limit order books. In this post we investigate the order sizing distribution using our data. 
+For the other parts of this series, see <a href='httsp://jmackillop.ml/projects/lob-part1'>Part 1 </a>, <a href='httsp://jmackillop.ml/projects/lob-part2'>Part 2</a>, <a href='httsp://jmackillop.ml/projects/lob-part2'>Part 3</a>
+</i></p>
+
+<p>In this part we investigate the distribution of the order sizes. We perform exploratory analysis, and then rigorously test a power law hypothesis. <a href='#pla'>Jump to power law analysis.</a></p>
+
+<h2 class='heading'>Exploratory Analysis</h2>
+<p>We begin with an exploratory analysis of the data. The accompanying R code is available on my Github <a href='https://github.com/jmackillop/Order-Book-Modelling/blob/master/Best%20queues.R'>here</a>(The relevant code is from line 110). </p>
+
+First a histogram of the order sizes is plotted for MSFT on 1/11/2018, displayed in the first figure below. 
+
+![Figure 1](/assets/images/order_size_hist.jpeg)
+
+The most striking feature is the extremely large quantity of orders of size 100. In this case, approximately 84.2% of all orders were of size exactly 100. The exact proportion of orders of size 100 varies across stocks, for example it is about 70% for INTC and 16% for GOOG, but the strong preference for this order size is extremely consistent. The order size distribution of a stock depends strongly on the approximate level of the price of that stock, as can be seen below.<a id='fig2'></a>
+
+![Figure 2](/assets/images/hist_bigvssmallprice_ordersizes.jpeg)
+
+The histograms for stocks with a higher price per unit (in the upper half of the figure) have a qualitatively different distribution shape than the stocks with a lower price per unit (bottom half of the figure). The upper histograms are for the shares with the highest unit prices among the 25 available, around $1500 per unit, and the lower histograms are for the lowest prices, around $45 per unit.
+
+ In particular, the mean order size decreases as the price increases, as can be seen in the plot on the left of the next figure below. The plot on the left shows, on a loglog scale, mean order size against the bid price at the open rounded to the nearest integer. A potential explanation for this is that order sizing is chosen by traders so that the value traded per order remains approximately constant across stocks, but this is disproved by considering the plot on the right which shows that the overall effect of higher unit price and smaller mean order size is an increase in mean order value. The figure shows, on a loglog scale, the mean order value against price. Each point represents one of the 25 available stocks. The best fit lines are in red.
+
+![Figure 3](/assets/images/order_size_hist.jpeg)
+
+Furthermore, there is extremely strong clustering at other "nice" round number quantities, such as 10, 200, 500, and 1000. <a href='https://epjb.epj.org/articles/epjb/abs/2009/05/b080935/b080935.html'>Mu et. al.</a> find a similar strong preference for such numbers, observing decreasingly large spikes (relative to the surrounding order sizes) at multiples of 10000, 5000, 1000, 500, and 100. We find that for MSFT, approximately 93% of order sizes are a multiple of 100, and approximately 99% of order sizes are less than 100 or a multiple of 100. In the following analysis for MSFT, we will when convenient elect to exclude the orders of size greater than 100 that are not multiples of 100 in order to simplify the modelling. A brief analysis of the excluded data shows it is not meaningfully different from the rest.
+
+<a href='https://arxiv.org/pdf/cond-mat/0203511.pdf'>Bouchaud et. al. </a> found that the limit order sizes are distributed uniformly on a log scale for limit order sizes varying from 10 to 50,000. The figure below plots this for the MSFT best queue limit order data. 
+
+![Figure 4](/assets/images/logsizes.jpeg)
+
+On the left there is the frequency histogram for log sizes of limit orders for MSFT on 1/11/2018. On the right, the same plot is shown with a changed y-axis to show more detail. It is clear that the preference for round numbers is sufficiently strong to invalidate their finding for this data, but if we restrict to sizes from 10 to 1000, and ignore the spikes at the round numbers, this may have some (limited) potential, but we don't expore this further here.
+
+The following analysis is split into two components. First the orders of size less than 100 are considered, and then separately the orders of sizes that are multiples of 100 are considered. The number of orders of size less than 100 (for MSFT on 1/11/2018) are plotted below. 
+
+![Figure 5](/assets/images/MSFT_1to99_ordersizes.jpeg)
+
+
+There is by far the most orders at size 10, followed by size 1. The rest of the distribution is close to uniform, with slightly more orders at multiples of 10. This pattern is NOT the same for other stocks, but the general strong preference for round numbers holds. Even among stocks with approximately the same price level, there are notable differences. For example, for INTC, which has a price of about $50 (so of the same magnitude as MSFT), there is approximately twice as many orders of size 50 as the next most common size less than 100. Stocks with very large prices have a significantly different distribution for order sizes less than 100, as we saw at the start of the exploratory analysis in the <a href='#fig2'>second figure</a>.
+
+Note that at least for MSFT, as orders of size less than 100 make up only approximately 6% of the number of total orders, and their size is by definition small, these orders as a group will have a relatively small effect on the dynamics of the LOB. Considering the <a href='#fig2'>second figure</a>, we see that it is reasonable to apply a similar method to stocks with a unit price which is relatively small, whereas doing so for stocks with a high unit price would lead to removing the vast majority of the data. In the subsequent analysis for MSFT, we thus focus our attention on the larger and more frequent orders, i.e. the orders of sizes which are multiples of 100. In the plot below, a log-log plot of order sizes shows a roughly linear trend over order sizes 100 to approximately 5000. The red-dashed line is a power law with scaling parameter 3.8, and takes value 1 at order size 100. Beyond size 5000, most order sizes will have zero corresponding orders, and so won't be plotted, while the infrequent orders of size greater than 5000 will almost all be the unique order at that size, leading to a stepped and eventually flat plot past about size 10000. <a id='pl1'></a>
+
+![Figure 6](/assets/images/powerlaw1.jpeg)
+
+
+For these orders, due to the roughly linear trend presented in the plot, we hypothesise that they follow a power law distribution. If that is the case, then recall that the order sizes will be approximately distributed such that, for order sizes $$100x$$, we have $$P(X=x)= x^{-\alpha} / \zeta(\alpha)$$. Here $$\alpha$$ is the scaling parameter and $$\zeta(\alpha)$$ is a normalisation constant, the <a href='https://en.wikipedia.org/wiki/Riemann_zeta_function'>Riemann zeta function</a>, defined by $$\zeta(\alpha)=\sum_{n=1}^\infty \frac{1}{n^{\alpha}}$$. We anticipate that the power law may only apply to a tail of the distribution, so will also seek to find an $$x_{min}$$ at which the power law rule can reasonably be said to begin.
+
+<h2 class='heading' id='pla'>Power law analysis</h2>
+To rigorously investigate this hypothesis, we follow the procedure detailed in the <a href='https://arxiv.org/abs/0706.1062'>paper by Clauset et. al.</a> As outlined in their paper, the analysis is performed in three steps. First, the parameters $$\alpha$$ and $$x_{min}$$ are estimated. Second, the goodness of fit between the power law (with the estimated parameters) and the data is calculated. Finally, the power law hypothesis is compared to reasonable alternative hypotheses using a likelihood ratio test, and may be rejected if an alternative hypothesis provides a better explanation for the data. For the code used in this analysis, see <a href='https://github.com/jmackillop/Order-Book-Modelling/blob/master/Best%20queues.R'>my code on Github</a> from about line 110, where we use the <a href='https://www.jstatsoft.org/article/view/v064i02'>poweRlaw package.</a>
+
+When estimating the parameters, first the parameter $$x_{min}$$ is estimated. To do this, we select $$x_{min}$$ such that the difference between the actual distribution of the data and the best fit power law is as small as possible (how to find the best fit is described in the next paragraph). If the value $$x_{min}$$ is too large, then too much data will be excluded and so the variance of the datapoints will cause the fit to be bad. Equally, if the value $$x_{min}$$ is too small, then data will be included that does not follow a power law, so the fit will again be worse. To quantify what is meant by the difference between distributions, we use the <a href='https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test#Kolmogorov%E2%80%93Smirnov_statistic'>Kolmogorov-Smirnov (KS) statistic</a>. 
+
+<p>For two distributions with cumulative distribution functions (CDFs) \( F_1(x) \) and \( F_2(x) \), the statistic is in general defined to be \[ D_{1,2} = \sup\limits_{x} |F_1(x) - F_2(x)| \] 
+In our case, we are only interested in the distributions after \(x_{min}\), so writing \(B(x)\) for the empirical CDF for the observations greater than \(x_{min}\) and \(P(x)\) for the fitted power law CDF greater than \(x_{min}\), we use the statistic \[ D = \sup\limits_{x \geq x_{min}} |B(x) - P(x)| \]
+To be precise, the estimated value of \(x_{min}\) is chosen such that D is minimised. </p>
+
+<p>The scaling parameter \( \alpha \) must then be estimated. To do this, we apply the method of maximum likelihood. If the data is continuous, then there is a relatively simple closed form estimate for \( \alpha \). In the discrete case however, which is what we are interested in, there is no known closed form solution, and so the MLE, which we denote by \( \hat{\alpha} \), must be estimated. To do this, following the outline of Clauset et. al., begin by writing, for order sizes \( x \), \[ P(X=x)= \frac{x^{-\alpha}}{\zeta(\alpha, x_{min})} \]
+where the Hurwitz zeta function, \( \zeta \), acts as a normalisation constant and is defined as 
+\[ \zeta(\alpha, x_{min}) = \sum_{n=0}^\infty \frac{1}{(x_{min}+n)^{\alpha}} \]
+Then the likelihood for data \( \textbf{x} = (x_1,...,x_k) \) is such that
+$$P(\textbf{x}|\alpha) \propto \prod_{i=1}^k \frac{x_i^{-\alpha}}{\zeta(\alpha, x_{min})}$$
+so that the log-likelihood is of the form \( -\alpha \sum_{i=1}^k \log(x_i^k) -k \log(\zeta(\alpha, x_{min})) \). Taking derivatives with respect to \( \alpha \) and setting equal to zero gives 
+\[ -\sum_{i=1}^k \log(x_i^k) -k \zeta'(\alpha, x_{min}) \frac{1}{\zeta(\alpha, x_{min})} = 0 \]
+We then have that \( \hat{\alpha} \) satisfies
+\[ \frac{\zeta'(\hat{\alpha}, x_{min})}{\zeta(\hat{\alpha}, x_{min})} = -\frac{1}{k} \sum_{i=1}^k \log(x_i^k) \]
+which is solved numerically. It <a href='https://arxiv.org/abs/0706.1062'>can be shown</a> that this gives an \( \hat{\alpha} \) which is consistent. </p>
+
+<p>Performing these parameter estimate procedures on the MSFT data restricted to only orders of size a multiple of 100 gives an estimated \( x_{min} \) of 100 and \( \hat{\alpha} \) as 3.81. For the code and a description of the implementation, see the code on Github <a href='https://github.com/jmackillop/Order-Book-Modelling/blob/master/order_size_modelling%20pretty.R'>here.</a></p>
+
+<p>The strategy to estimate goodness of fit is a bootstrap procedure which is performed as follows. We will repeatedly simulate data sets from a power law distribution with the parameters \( \alpha \) and \( x_{min} \). For each simulated data set, we will calculate using the previously discussed procedure the estimated parameters \( \hat{\alpha} \) and \( \hat{x}_{min} \) and then calculate, using the KS statistic, the difference between the distribution fitted to the simulated data and the true distribution. We will then compare this to our observed data - if many of the simulated distributions have a greater difference from the power law distribution (parameters \( \alpha \) and \( x_{min} \)) than the real data, we will conclude that the data is consistent with a power law hypothesis, and similarly if the observed data has a relatively large difference compared to the simulated distributions, we will reject the power law hypothesis. The p-value is defined to be the proportion of simulated data sets that have a KS-statistic greater than the observed data, so a low p-value suggests a poor fit - we will take a p-value less than 0.05 to be evidence to reject the power law.</p>
+
+<p>In general, when simulating the data sets the regions above and below \( x_{min} \) must be considered separately. However, in this case as the estimated \( x_{min} \) is the smallest possible discrete value, we can simulate by only drawing from a power law. When considering how many simulations to run, Clauset et. al. suggested that a rough rule of thumb is that to reduce the error in the p-value to about \( \epsilon \), it is necessary to run about \( \frac{1}{4 \epsilon ^{2}} \) simulations, so we choose to run 2500 simulations for an approximate p-value error of 0.01.</p>
+
+<p>Of the 2500 simulations run, all of them had a smaller KS statistic (calculated with the proposed power law distribution) than the original observed data, giving a p-value of \( 0/2500 = 0 \). This indicates that the data is highly likely to not follow a power law distribution. We thus conclude that a power law is in fact not a good model for all order sizes for MSFT.</p>
+
+<p>We perform a similar analysis again, this time examining individually market orders and limit orders. For MSFT limit orders, a similarly poor power law goodness of fit is achieved, so is rejected. The distribution of limit order sizes across stocks is consistently less similar to a power law distribution than the market order size distribution. This is demonstrated in the figure below where for three stocks on a log-log scale limit order size and market order size are shown in the upper plots and lower plots, respectively. Although a general linear trend is present in all the plots, the market order sizes are closer to a line on the log-log scale, and so we would expect a better fit to a power law. Other stocks behave similarly. </p>
+
+![Figure 7](/assets/images/plot_limitvsmarket_ordersize.jpeg)
+
+<p>For MSFT market orders, only 58.5% have a size which is a multiple of 100, so we elect to begin by performing the analysis on the full data set. The figure below is a log-log plot of market order sizes (only sizes a multiple of 100 are plotted), which seems to show a more promising linear relationship than the equivalent <a href='#pl1'>figure above</a> for limit orders. Note only orders with a size a multiple of 100 are plotted to avoid cluttering, however all order sizes are used in the following analysis.</p>
+
+![Figure 8](/assets/images/marketordersizes.jpeg)
+
+<p>The estimated parameters are \( x_{min} = 1035 \) and \( \hat{\alpha} = 2.51 \). The goodness of fit estimation procedure returns a p-value of 0.05, so a power law is (only just) not inconsistent with the data. The final stage of the analysis is to compare to other plausible distributions. There are of course an infinite number of other possible plausible distributions, so we must limit our attention to only a few distributions. The first candidate will be the log-normal distribution, which is frequently mistaken for a power law due to a near linear scaling over several orders of magnitude on a log-log scale. <a href='https://arxiv.org/abs/1507.03408'>Benguigui and Marinov</a> suggest, after a survey of potentially power law distributed data sets across the sciences, that approximately a third of the studied data sets are better described by a log-normal or similar distribution. The second candidate will be an exponential distribution.</p>
+
+<p>We seek to apply <a href='https://www.researchgate.net/publication/4895690_Likelihood_Ratio_Tests_for_Model_Selection_and_Non-Nested_Hypotheses'>Vuong's non-nested hypothesis test</a> using the built-in function in the poweRlaw package. Vuong's test is a likelihood ratio test which uses the Kullback-Leibler Information Criterion to measure the distances to the true distribution. Under the null hypothesis that the two models differ equally from the true distribution, the test statistic is asymptotically normally distributed with mean zero. If the first model fits better, the statistic will be positive (and tend to infinity), while if the second is better, it will be negative (and tend to negative infinity). First a log-normal distribution is fit to the data for order sizes \( x \) larger than \( x_{min} = 1035 \). Then the proposed power law and the log-normal are compared via the test, yielding a test-statistic of -1.33, which if significant would indicate that the second model, the log-normal, is a better model. However, if the null hypothesis is true, the probability of getting a test statistic at least this far from zero is 0.185, so we conclude that neither of the models is better. Performing the test with an exponential distribution yields a test-statistic of 1.31, which has a similar probability of 0.189 of occurring under the null hypothesis, so we again must conclude that neither of the models is better. This leaves us unable to rule out a power law for market order sizes for MSFT, but also unable to conclude that the sizes have a power law distribution in the tail. 
+
+<p>Returning to the figure directly above, we note that the linear appearance of the plot is what initially drew us to testing a power law hypothesis, but due to the strong clustering of market order sizes at 1000 leading to a large difference compared to a power law around this value, the estimated \( x_{min} \) is found to be slightly greater than 1000, and so the appealing linearity of the first two thirds of the plot is not considered in subsequent analysis. Also, the estimated \( \hat{\alpha} \) can not be extrapolated to smaller order sizes, as it is an extremely poor fit to the data. In addition, the consistent preference for round number order sizes means that a simple power law distribution will never be able to fully explain the order size distribution. </p>
+
+<p>In order to more effectively take account of this, we propose to deal with the 21.5% of market orders which are not a multiple of 100 by rounding down these order sizes to the nearest hundred. Orders with a size between 1 and 99 will not be considered, as they have a qualitatively different distribution. Performing the same procedure as above to estimate the parameters gives values of \( x_{min} = 100 \) and \( \hat{\alpha} = 3.43 \). These values provide a reasonable fit to the data, and cover the majority of orders (as opposed to the small minority of orders with size greater then 1035). To investigate the universality of the \( \alpha \) parameter, we perform an identical analysis for the remaining 24 stocks. The estimated parameters for market order sizes at best queues where order sizes are rounded down to nearest hundred are included in the table below.</p>
+
+<table style='width:100%'>
+    <tr>
+        <th>Ticker </th>
+        <th>\( \hat{x}_{min} \) </th>
+        <th>\( \hat{\alpha} \) </th>
+    </tr>
+    <tr>
+        <td>AAPL</td>
+        <td>200</td>
+        <td>2.554526</td>
+    </tr>
+    <tr>
+        <td>ADBE</td>
+        <td>100</td>
+        <td>4.030704</td>
+    </tr>
+    <tr>
+        <td>AMGN</td>
+        <td>100</td>
+        <td>4.157622</td>
+    </tr>
+   <tr>
+        <td>AMZN</td>
+        <td>100</td>
+        <td>3.264695</td>
+    </tr>
+    <tr>
+        <td>AVGO</td>
+        <td>100</td>
+        <td>4.275291</td>
+    </tr>
+    <tr>
+        <td>BKNG</td>
+        <td>100</td>
+        <td>4.305794</td>
+    </tr>
+   <tr>
+        <td>CHTR</td>
+        <td>100</td>
+        <td>4.592343</td>
+    </tr>
+    <tr>
+        <td>CMCSA</td>
+        <td>400</td>
+        <td>3.118441</td>
+    </tr>
+    <tr>
+        <td>CME</td>
+        <td>100</td>
+        <td>3.582398</td>
+    </tr>
+   <tr>
+        <td>COST</td>
+        <td>100</td>
+        <td>4.440386</td>
+    </tr>
+    <tr>
+        <td>CSCO</td>
+        <td>400</td>
+        <td>3.34705</td>
+    </tr>
+    <tr>
+        <td>FB</td>
+        <td>100</td>
+        <td>2.870815</td>
+    </tr>
+    <tr>
+        <td>FOX</td>
+        <td>100</td>
+        <td>2.6213</td>
+    </tr>
+   <tr>
+        <td>GILD</td>
+        <td>100</td>
+        <td>3.39779</td>
+    </tr>
+    <tr>
+        <td>GOOG</td>
+        <td>100</td>
+        <td>4.375791</td>
+    </tr>
+    <tr>
+        <td>INTC</td>
+        <td>100</td>
+        <td>2.537834</td>
+    </tr>
+    <tr>
+        <td>MSFT</td>
+        <td>100</td>
+        <td>3.42833</td>
+    </tr>
+   <tr>
+        <td>NFLX</td>
+        <td>200</td>
+        <td>2.518929</td>
+    </tr>
+    <tr>
+        <td>NVDA</td>
+        <td>100</td>
+        <td>3.05257</td>
+    </tr>
+    <tr>
+        <td>PEP</td>
+        <td>100</td>
+        <td>3.554979</td>
+    </tr>
+    <tr>
+        <td>PYPL</td>
+        <td>100</td>
+        <td>3.789811</td>
+    </tr>
+   <tr>
+        <td>QCOM</td>
+        <td>100</td>
+        <td>3.21108</td>
+    </tr>
+    <tr>
+        <td>SBUX</td>
+        <td>100</td>
+        <td>2.784378</td>
+    </tr>
+    <tr>
+        <td>TXN</td>
+        <td>100</td>
+        <td>3.294146</td>
+    </tr>
+    <tr>
+        <td>WBA</td>
+        <td>100</td>
+        <td>3.396501</td>
+    </tr>
+</table>
+
+<p>The estimated scaling parameters, \( \hat{\alpha} \), range from 2.52 to 4.59, with a mean value of 3.46. This stands in contrast to the result from <a href='https://arxiv.org/abs/cond-mat/0102518'> Maslov and Mills</a>, who found a scaling parameter of approximately 2.4 was consistent across stocks. However, their paper does not make clear how this result was derived, beyond offering a somewhat reasonable visual fit. Additionally, only three stocks are studied, BRCM, CSCO, and JDSU, so it does not seem reasonable to extrapolate the result to all stocks from such a restricted sample. We also note that their data was collected almost 20 years ago, in the year 2000, and it is quite plausible that market dynamics have changed since then. </p>
+
+<p>We should also note, however, that our goodness of fit estimation procedure returns poor results, with most of the p-values being 0. Despite this, we should not discard the power law model just because it is not the "true" distribution. Considering the figure below, we see that on a log-log scale the majority of the available stocks have a linear relationship between probability and market order size at the best queues.</p>
+
+<figure>
+    <img src='/assets/images/plot_market_bestq_ordersize_5x5.jpeg'>
+</figure>
+
+<p>For all 25 available stocks, we have log-log plots of the probability of market order sizes at the best queues, considering only order sizes which are a multiple of 100. Note that the y-axis is chosen to show all the points, and so is not necessarily the same between plots.</p>
+
+<p>A few of the stocks with high price per unit, such as BKNG and GOOG, don't appear to be linear, but this is not unexpected as they have relatively few orders larger than size 100. A power law model allows us to gain a good first approximation to the the market order size distribution for most of these stocks, while still being relatively widely applicable. Although limit order size and cancellation order size is not so well modelled by a power law, its simplicity means it may offer the best solution in situations where concise models or computational speed are required.</p>
+
+<p>To attempt to improve on some of the issues identified with a power law assumption for the order size distribution, a future work might look to more effectively deal with the order size clustering at round number amounts (such as 1000) by treating these separately and treating the order size distribution as the sum of two distributions, or alternatively using a smoothing function under the assumption that order sizes close to, for example, 1000, will with some probability be reassigned that order size. In effect, this seems to be what was inadvertently performed by <a href='https://arxiv.org/abs/cond-mat/0102518'> Maslov and Mills</a>, as their data consisted of snapshots every few seconds of the total volume traded and number of orders (and the type of order) between snapshots, resulting in a smoothing of order sizes which were calculated as the average order size over the intervals.</p>
+
+<p>In this four part series, we have reviewed the paper by Cont and Larrard and investigated the plausibility of their theoretical results. We have also investigated some of the empirical properties of LOBs, specifically the distribution of the interarrival times of orders and the distribution of the order sizes. These distributions, and other similar ones, are fundamental to the assumptions and verification of essentially all LOB models, and so in our view it is highly important that they are rigorously investigated in order to more accurately guide the development of the models. It is our hope that in this series we have been able to provide some useful investigation on up-to-date data, as well as give an insight into LOBs.</p>
