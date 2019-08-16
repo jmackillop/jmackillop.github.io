@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Modelling LOBs Part 3: Order Arrival Rate"
-date:   2019-01-01 15:01:26 +0100
+date:   2019-06-08 15:01:26 +0100
 categories: stochastic-modelling limit-order-book data 
 ---
 
@@ -29,39 +29,24 @@ On the left, we have a simulated exponential with parameter equal to approximate
 
 It would appear then that an exponential distribution assumption is rather poor for modelling the interarrival times at the best queues  for MSFT.
 
-We now consider different stocks. In Figure \ref{fig:qqlimit5x5}, the Q-Q plots for all 25 available stocks compares the limit order interarrival times at the best queues to an exponential distribution. For all of these stocks, we observe a similar pattern to MSFT. The points, for a small part of the x-axis near the origin, fall below the red line in a near flat line, before climbing steeply. This indicates, as with MSFT, clustering of the limit order interarrival times at the best queues at very short interarrival times, but also a heavy tail of very long interarrival times, as compared to the distribution expected under an exponential model. Market and cancellation orders display similar behaviour for all the stocks, similarly to MSFT. See Figures \ref{fig:qqmktbest55} and \ref{fig:qqcancbest55} in Appendix \ref{app arrivaltimefigs} for the Q-Q plots. While some of these Q-Q plots may appear to offer a reasonable fit close to the origin, this is invariably not the case, but is rather due to the relatively flat red line being visually similar to the almost completely flat points close to the origin.
+We now consider different stocks. In the figure below, the Q-Q plots for all 25 available stocks compares the limit order interarrival times at the best queues to an exponential distribution. Theoretical quantiles are on the x-axis and observed quantiles are on the y-axis.
 
-![Figure 3](/assets/images/)
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[scale=.6]{images/qq_limit_best_queues_5x5.jpeg}
-    \caption{The Q-Q plots for all 25 available stocks showing limit order interarrival times at the best queues compared to an exponential distribution. Theoretical quantiles are on the x-axis and observed quantiles are on the y-axis. The points would fall approximately on the red lines if the distributions were indeed exponential.}
-    \label{fig:qqlimit5x5}
-\end{figure}
+![Figure 3](/assets/images/qq_limit_best_queues_5x5.jpeg)
 
-We also explore the order arrival rate at different queues. The previous analysis has looked at the best queues, but we now consider the order arrival rate further into the book, at the second, third, and tenth best queues. The limit order interarrival times at the tenth best queues for all 25 stocks are compared to an exponential distribution using Q-Q plots in Figure \ref{fig:qqlimit10best5x5}. We note that the heavy tailed nature of the distributions remain consistent across the 25 stocks, and in fact is also consistent across the second and third best queues, as well as market and cancellation orders. Deep into the book, at the tenth best queues, some of the stocks appear to begin to offer a better fit to the exponential distribution close to the origin on the Q-Q plots in Figure \ref{fig:qqlimit10best5x5}, as exemplified by BKNG, PEP or QCOM. However, examining more closely the Q-Q plots close to the origin reveals that the distributions are in fact quite different. Figure \ref{fig:qqlimit10bestqPEPzoom} demonstrates this for PEP, showing that the clustering at very short interarrival times is still present deep into the book. This pattern also holds for cancellation orders at the tenth best queues.
+For all of these stocks, we observe a similar pattern to MSFT. The points, for a small part of the x-axis near the origin, fall below the red line in a near flat line, before climbing steeply. The points would fall approximately on the red lines if the distributions were indeed exponential. This therefore indicates, as with MSFT, clustering of the limit order interarrival times at the best queues at very short interarrival times, but also a heavy tail of very long interarrival times, as compared to the distribution expected under an exponential model. Market and cancellation orders display similar behaviour for all the stocks, similarly to MSFT. See Figures \ref{fig:qqmktbest55} and \ref{fig:qqcancbest55} in Appendix \ref{app arrivaltimefigs} for the Q-Q plots. While some of these Q-Q plots may appear to offer a reasonable fit close to the origin, this is invariably not the case, but is rather due to the relatively flat red line being visually similar to the almost completely flat points close to the origin.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[scale=.6]{images/qq_limit_10bestq_5x5.jpeg}
-    \caption{The Q-Q plots for all 25 available stocks showing limit order interarrival times at the 10th best queues compared to an exponential distribution.}
-    \label{fig:qqlimit10best5x5}
-\end{figure}
+We also explore the order arrival rate at different queues. Up to here, our analysis has looked at the best queues, but we now consider the order arrival rate further into the book, at the second, third, and tenth best queues. The limit order interarrival times at the tenth best queues for all 25 stocks are compared to an exponential distribution using Q-Q plots in the figure below.
 
-\begin{figure}[htb]
-    \centering
-    \includegraphics[scale=.35]{images/qq_limit_10bestq_PEPzoom.jpeg}
-    \caption{The Q-Q plot for PEP, restricted to the first 3 quantiles, showing limit order interarrival times at the 10th best queues compared to an exponential distribution.}
-    \label{fig:qqlimit10bestqPEPzoom}
-\end{figure}
+![Figure 4](/assets/images/qq_limit_10bestq_5x5.jpeg)
 
-While it is clear that the interarrival times are not drawn from an exponential distribution at the tenth best queues, there is equally a clear improvement in the model as we progress deeper into the book. In Figure \ref{fig:histlimit10bestqMSFT}, the equivalent of Figure \ref{fig:arrivalssim} is plotted at the tenth best queues rather than the best queues. On the left, the simulated exponential has as its parameter the inverse of the mean limit order interarrival times at the tenth best queues. Note that the x-axis is from 0 to approximately three times the mean time, and so ends up covering markedly larger interarrival times than Figure \ref{fig:arrivalssim}. Indeed the first few bins of Figure \ref{fig:histlimit10bestqMSFT} cover the whole domain of Figure \ref{fig:arrivalssim}. The histograms show that at the tenth best queues, there is still a considerably larger number of limit orders with very short interarrival times than would be expected under an exponential distribution. Considering the overall shape of the distributions however, and comparing to Figure \ref{fig:arrivalssim}, it is clear that the exponential distribution is a more plausible model at the tenth best queues than at the best queues.
+We note that the heavy tailed nature of the distributions remain consistent across the 25 stocks, and in fact is also consistent across the second and third best queues, as well as market and cancellation orders. Deep into the book, at the tenth best queues, some of the stocks appear to begin to offer a better fit to the exponential distribution close to the origin on the Q-Q plots in the figure above, as exemplified by BKNG, PEP or QCOM. However, examining more closely the Q-Q plots close to the origin reveals that the distributions are in fact quite different. The figure below demonstrates this for PEP, showing that the clustering at very short interarrival times is still present deep into the book. This pattern also holds for cancellation orders at the tenth best queues.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[scale=.58]{images/hist_limit_10bestq_MSFT.jpeg}
-    \caption{Histograms for MSFT limit order interarrival times at the 10th best queues. The upper two histograms have the same x-axis as Figure \ref{fig:arrivalssim}, while the bottom two use more natural axes.}
-    \label{fig:histlimit10bestqMSFT}
-\end{figure}
+![Figure 5](/assets/images/qq_limit_10bestq_PEPzoom.jpeg)
 
-The conclusion is then that overall a Poisson process assumption for modelling the order arrival rate is relatively poor. A possible improvement to the Poisson process model is a Hawkes process, as previously mentioned, which is essentially a generalised version of the Poisson process where the intensity of the arrival rates is allowed to vary over time. Both Toke \cite{toke} and Zhao \cite{zhao} found that Hawkes processes were more effective in agreeing with empirical studies than the simpler Poisson process. While we have not tested the Hawkes process hypothesis against our data, the possibility to reproduce clustering appears to be a significant improvement, despite the marginally more complicated modelling compared to a Poisson process.
+While it is clear that the interarrival times are not drawn from an exponential distribution at the tenth best queues, there is equally a clear improvement in the model as we progress deeper into the book. In the next figure shown below, we plot the equivalent of the second figure on this page, but this time use the tenth best queues rather than the best queues. 
+
+![Figure 6](/assets/images/hist_limit_10bestq_MSFT.jpeg)
+
+On the left, the simulated exponential has as its parameter the inverse of the mean limit order interarrival times at the tenth best queues. Note that the x-axis is from 0 to approximately three times the mean time, and so ends up covering markedly larger interarrival times than the previous bar chart. Indeed the first few bins of this figure cover the whole domain of the previous figure. The histograms show that at the tenth best queues, there is still a considerably larger number of limit orders with very short interarrival times than would be expected under an exponential distribution. Considering the overall shape of the distributions however, and comparing to the first bar chart, it is clear that the exponential distribution is a more plausible model at the tenth best queues than at the best queues.
+
+The conclusion is then that overall a Poisson process assumption for modelling the order arrival rate is relatively poor. A possible improvement to the Poisson process model is a <a href='https://en.wikipedia.org/wiki/Point_process#Hawkes_(self-exciting)_processes'>Hawkes process</a>, as previously mentioned, which is essentially a generalised version of the Poisson process where the intensity of the arrival rates is allowed to vary over time. Both <a href='https://arxiv.org/pdf/1003.3796.pdf'>Toke</a> and <a href='https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.173.2067&rep=rep1&type=pdf'>Zhao</a> found that Hawkes processes were more effective in agreeing with empirical studies than the simpler Poisson process. While we have not tested the Hawkes process hypothesis against our data, the possibility to reproduce clustering appears to be a significant improvement, despite the marginally more complicated modelling compared to a Poisson process.
