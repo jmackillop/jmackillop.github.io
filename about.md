@@ -9,4 +9,4 @@ permalink: /about/
 <h3>Work with me!</h3>
 <p>As a recent graduate I'm looking for new opportunities! If you think we might be a match, please get in touch. The best way to reach out to me is by <a class='u-email' href='mailto:jmackillop@pm.me'>email</a>, but <a href='https://www.linkedin.com/in/jamesmackillop'>linkedin</a> also works.
 
-<p> A copy of my CV is available as a pdf <a href=>here</a>
+<p> A copy of my CV is available as a pdf <a href='/assets/JMacKillopCV.pdf'>here</a>
