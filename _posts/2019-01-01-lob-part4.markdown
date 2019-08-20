@@ -29,7 +29,7 @@ The histograms for stocks with a higher price per unit (in the upper half of the
 
  In particular, the mean order size decreases as the price increases, as can be seen in the plot on the left of the next figure below. The plot on the left shows, on a loglog scale, mean order size against the bid price at the open rounded to the nearest integer. A potential explanation for this is that order sizing is chosen by traders so that the value traded per order remains approximately constant across stocks, but this is disproved by considering the plot on the right which shows that the overall effect of higher unit price and smaller mean order size is an increase in mean order value. The figure shows, on a loglog scale, the mean order value against price. Each point represents one of the 25 available stocks. The best fit lines are in red.
 
-![Figure 3](/assets/images/order_size_hist.jpeg)
+![Figure 3](/assets/images/plot_price_size.jpeg)
 
 Furthermore, there is extremely strong clustering at other "nice" round number quantities, such as 10, 200, 500, and 1000. <a href='https://epjb.epj.org/articles/epjb/abs/2009/05/b080935/b080935.html'>Mu et. al.</a> find a similar strong preference for such numbers, observing decreasingly large spikes (relative to the surrounding order sizes) at multiples of 10000, 5000, 1000, 500, and 100. We find that for MSFT, approximately 93% of order sizes are a multiple of 100, and approximately 99% of order sizes are less than 100 or a multiple of 100. In the following analysis for MSFT, we will when convenient elect to exclude the orders of size greater than 100 that are not multiples of 100 in order to simplify the modelling. A brief analysis of the excluded data shows it is not meaningfully different from the rest.
 
