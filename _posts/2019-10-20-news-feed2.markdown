@@ -1,20 +1,18 @@
 ---
 layout: post
-title:  "News Feed by Event: Scraping and Named Entity Recognition with SpaCy"
+title:  "News Feed by Event: TFIDF Vectorization and DBSCAN Clustering"
 date:   2019-10-20 15:01:26 +0100
-categories: news-feed news data clustering scraping tfidf
+categories: news-feed news data clustering scraping tfidf dbscan
 ---
 
 
-<p><i>This is the first in a series of posts that will explain how I built a news feed that groups articles based on news event.</i></p>
+<p><i>This is the second in a series of posts that will explain how I built a news feed that groups articles based on news event.</i></p>
 
-<p> The objective is to be able to identify the overall top news stories among the headlines of several of my favourite news publications, and then for each event/topic return a handful of articles from my favourite sites so I can get a different take on the top stories. So for example, if it is identified that a top story is a political debate from the previous night, I want to get a few articles on that from among my favourite publications.</p>
+<h2 class="heading"> TF-IDF Vectorization </h2>
 
-<p>The entire program is written in python, with help from a few libraries.</p>
+<p>Once named entity recognition is performed, the next step is to perform tf-idf vectorization of the named entities. This involves, for each article, counting the frequency of the named entities (Term Frequency), and then weighting them by how common they are in a large corpus (Inverse Document Frequency). Using tf-idf, terms that occur very frequently in the corpus, such as 'the' or 'and', will receive much lower weights than unusual terms, such as 'tyrannosaurus rex', for a given frequency in the target text. This effectively acts to measure the level of surprise or importance of terms - seeing 'government' five times in an article gives us much less information about the news event than seeing 'tyrannosaurus rex' five times. </p>
 
-<h2 class="heading"> Scraping and article collection </h2>
-
-<p>To start, I manually wrote the code for each news site to pull the top 10 or so news stories' urls from the headlines section. This is in the <a href='https://github.com/jmackillop/news-clustering/blob/master/get-article-texts.py'>'get-article-texts.py'</a> file available on my GitHub. I used regex to identify the appropriate parts of the HTML scraped with <a href='https://requests.kennethreitz.org/en/master/'>the requests library</a> from the front pages of the websites. For example, the Reuters links are identified with the following code.</p>
+<p>To begin tf-idf vectorization, first the corpus must be collected. The corpus is 10,000 recent articles from the Reuters news archives, collected using a similar method as for the headline articles - see reuters-corpus.py for the implementation. I then use CountVectorizer followed by TfidfTransformer to get the idf values for the named entities, our 'vocabulary', from the corpus. The tf-idf values then are found by multiplying the frequency of the named entities in the headline articles by the corresponding idf values. This gives, for each article, a vector of tf-idf values of length equal to the number of named entities among all the headline articles. These vectors can be thought of as a 'description' of each article in terms of the weighted importance of named entities in the article.</p>
 
 {% highlight python %}
 
@@ -24,84 +22,5 @@ all_reuters_link_endings = re.findall(r'<a href="(/article/.+?)"', rr.text)
 
 {% endhighlight %}
 
-<p> These are filtered to get the links we want, and are then put in the correct full web address form.</p>
-
-{% highlight python %}
-
-reuters_link_endings = []
-for i in range(13):
-    reuters_link_endings.append(all_reuters_link_endings[2*i])
-reuters_links = []
-for end in reuters_link_endings:
-    reuters_links.append('https://uk.reuters.com'+end)
-
-{% endhighlight %}
-
-<p>I tried to use the newspaper3k library for this (more later), but it was buggy for me (and others it seems). While this means the program isn't as easily scalable if I wanted to include many more news sites, this is fine for my personal purposes as I don't regularly look at any more than half a dozen or so news sources, so manually scraping is in this case probably just a case of avoiding overengineering.</p>
-
-<p>With the urls of the top 10 or so news headlines from each publication, I then used the newspaper3k library to extract the article text. (The newspaper3k library can do other things such as extracting the authors or the publication dates just as easily, but we leave things there for now). I initialize a list for the article texts and set up the newspaper library with the following code.</p>
-
-{% highlight python %}
-
-article_texts = []
-from newspaper import Article
-
-{% endhighlight %}
-
-<p>For each of the links that were scraped, I extracted the article contents using the library and added the text to the list.</p>
-
-{% highlight python %}
-
-for link in links:
-    a = Article(link)
-    a.download()
-    a.parse()
-    article_texts.append(a.text)
-
-{% endhighlight %}
-
-<p>I then saved the article contents to the files named 'article-text-NUM' <a href='https://github.com/jmackillop/news-clustering/blob/master/article-text-35'>(example on GitHub)</a>, where NUM ranges from 1 to the number of articles scraped. This is primarily to help while testing, as it improves run speeds.</p>
-
-{% highlight python %}
-
-i=1
-for t in article_texts:
-    f=open('article-text-%d' %i, 'w+')
-    f.write(t)
-    i+=1
-    f.close()
-
-{% endhighlight %}
-
-
-
-<h2 class="heading"> Named Entity Recognition </h2>
-
-<p>The next step for the data preprocessing is to perform named entity recognition, which I did using <a href='https://spacy.io/'>SpaCy</a>. The logic here is that news events are more or less uniquely identifiable by the people, places, companies, etc which are mentioned in them, and so if I can accurately identify the named entities for each article, then it becomes relatively easy, with a bit of machine learning, to cluster these articles into news events. After loading in the article texts into the list 'article_texts', I create a list of the named entities in each article, and put these into a list of lists.</p>
-
-<p> I set up spacy and then load the core English model and initialize the list of lists with the following code.</p>
-
-{% highlight python %}
-
-nlp = spacy.load("en_core_web_sm")
-all_entities_listol = [] #list of lists
-
-{% endhighlight %}
-
-<p> I then iterate over the articles, adding the entity to the entity list for the article if it is missing, then putting the article entity list into the list of lists. The named entities of a document in SpaCy can be accessed by looking at the '.ents' property of the document. I check the lower case version of the entities to avoid repeating entities that appear at the start of sentences, and also check that the entities are more than a single character.</p>
-
-{% highlight python %}
-
-for t in article_texts:
-    doc = nlp(t)
-    article_entities = []
-    for ent in doc.ents:
-        if (ent.text.lower() not in article_entities) and (len(ent.text.lower())>1):
-            article_entities.append(ent.text.lower())  
-    all_entities_listol.append(sorted(article_entities))
-
-{% endhighlight %}
-
-<p> I now have, for each article, a list of all the named entities in that article.</p>
 
 <p>In <a href='https://jmackillop.ml/projects/lob-part2'>the second part</a>, I look at tf-idf vectorization of the named entities and clustering the articles into events based on this.</p>
