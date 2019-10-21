@@ -104,4 +104,4 @@ for t in article_texts:
 
 <p> I now have, for each article, a list of all the named entities in that article.</p>
 
-<p>In <a href='https://jmackillop.ml/projects/lob-part2'>the second part</a>, I look at tf-idf vectorization of the named entities and clustering the articles into events based on this.</p>
+<p>In <a href='https://jmackillop.ml/projects/news-feed2'>the second part</a>, I look at tf-idf vectorization of the named entities and clustering the articles into events based on this.</p>
