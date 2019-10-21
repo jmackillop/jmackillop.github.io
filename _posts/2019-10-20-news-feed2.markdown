@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "News Feed by Event: TFIDF Vectorization and DBSCAN Clustering"
+title:  "News Feed by Event: TFIDF Vectorization and DBSCAN Clustering with Scikit-learn"
 date:   2019-10-20 15:01:26 +0100
 categories: news-feed news data clustering scraping tfidf dbscan
 ---
@@ -10,17 +10,220 @@ categories: news-feed news data clustering scraping tfidf dbscan
 
 <h2 class="heading"> TF-IDF Vectorization </h2>
 
-<p>Once named entity recognition is performed, the next step is to perform tf-idf vectorization of the named entities. This involves, for each article, counting the frequency of the named entities (Term Frequency), and then weighting them by how common they are in a large corpus (Inverse Document Frequency). Using tf-idf, terms that occur very frequently in the corpus, such as 'the' or 'and', will receive much lower weights than unusual terms, such as 'tyrannosaurus rex', for a given frequency in the target text. This effectively acts to measure the level of surprise or importance of terms - seeing 'government' five times in an article gives us much less information about the news event than seeing 'tyrannosaurus rex' five times. </p>
+<p>Once named entity recognition is performed, the next step is to perform tf-idf vectorization of the named entities. This involves, for each article, counting the frequency of the named entities (Term Frequency), and then weighting them by how common they are in a large corpus (Inverse Document Frequency). Using tf-idf, terms that occur very frequently in the corpus, such as 'the' or 'and', will receive much lower weights than unusual terms, such as 'tyrannosaurus rex', for a given frequency in the target text. This effectively acts to measure the level of surprise or importance of terms - seeing 'government minister' five times in an article gives us much less information about the news event than seeing 'national T-Rex convention' five times. </p>
 
-<p>To begin tf-idf vectorization, first the corpus must be collected. The corpus is 10,000 recent articles from the Reuters news archives, collected using a similar method as for the headline articles - see reuters-corpus.py for the implementation. I then use CountVectorizer followed by TfidfTransformer to get the idf values for the named entities, our 'vocabulary', from the corpus. The tf-idf values then are found by multiplying the frequency of the named entities in the headline articles by the corresponding idf values. This gives, for each article, a vector of tf-idf values of length equal to the number of named entities among all the headline articles. These vectors can be thought of as a 'description' of each article in terms of the weighted importance of named entities in the article.</p>
+<h3 class='subheading'> Corpus collection </h3>
+<p>To begin tf-idf vectorization, first the corpus must be collected. See the file <a href = 'https://github.com/jmackillop/news-clustering/blob/master/reuters-corpus.py'>reuters-corpus.py</a> on my GitHub for the full implementation. The corpus is 10,000 recent articles from the Reuters news archives, collected using a similar method as for the headline articles described in the <a href = '/projects/news-feed1'>first part</a>. </p> 
+
+<p>Using the requests library and regex, the article links on 1,000 pages of the Reuters archives are collected, for a total of 10,000 articles. Note the start point of the hundredth page - the target headline articles (and hopefully articles on the same events) are excluded. The aim is that the corpus should be representative of the target articles i.e. also consist of news articles, but using the target articles themselves is of no use as we do not learn the wider frequency of the terms.</p>
 
 {% highlight python %}
 
-# Reuters
-rr = requests.get('https://uk.reuters.com/news/world')
-all_reuters_link_endings = re.findall(r'<a href="(/article/.+?)"', rr.text)
+corpus_link_endings=[]
+for i in range(100,1101):
+    rr = requests.get('https://uk.reuters.com/news/archive/worldnews?view=page&page='+str(i))
+    links = re.findall(r'<a href="(/article/.+?)"', rr.text)
+    for j in range(10): #to remove extraneous links (note 10 articles per page)
+        corpus_link_endings.append(links[1+2*j])
 
 {% endhighlight %}
 
+<p>The article links are then completed to give the full urls, and are then saved to file.</p>
 
-<p>In <a href='https://jmackillop.ml/projects/lob-part2'>the second part</a>, I look at tf-idf vectorization of the named entities and clustering the articles into events based on this.</p>
+{% highlight python %}
+
+corpus_links=[]
+for end in corpus_link_endings:
+    corpus_links.append('https://uk.reuters.com'+end)
+#Save links to file
+f = open('reuters-corpus-10k-links.txt','w+')
+for link in corpus_links:
+    f.write(link+'\n')
+f.close()
+
+{% endhighlight %}
+
+<p>The <a href='https://newspaper.readthedocs.io/en/latest/'>newspaper3k</a> library is used to extract the article contents, as in the <a href = '/projects/news-feed1'>first part</a> and next the corpus texts are saved to file.</p>
+
+{% highlight python %}
+
+# Extract contents of article from url using newspaper3k
+corpus_texts = []
+from newspaper import Article
+for link in corpus_links:
+    a = Article(link)
+    a.download()
+    a.parse()
+    corpus_texts.append(a.text)
+
+# Write corpus-texts to a file
+f = open('reuters-corpus-10k.txt','w+')
+for text in corpus_texts:
+    f.write(text+'\n\n\n\n\n\n\n')
+f.close()
+
+{% endhighlight %}
+
+<h3 class='subheading'> Vectorisation with Scikit-learn </h3>
+
+<p>Once the corpus is read in and the vocabulary is set to be a list of all named entities in the target articles, the actual vectorisation can proceed. From the library scikit-learn I use CountVectorizer followed by TfidfTransformer to get the idf values for the named entities(the vocabulary) from the corpus. First the vocabulary counts in the corpus are found.</p>
+
+{% highlight python %}
+from sklearn.feature_extraction.text import CountVectorizer
+# Set vocab and limit to phrases of 1-4 tokens, then get document-term matrix
+cv1 = CountVectorizer(vocabulary=vocab, analyzer = 'word', ngram_range=(1,4))
+corpus_vocab_count_matrix = cv1.transform(docs)
+{% endhighlight %}
+
+<p> This produces a sparse matrix where each row represents an article in the corpus and each column represents a vocabulary term, so has 10,000 rows and approximately 1,000 columns. This is then converted to the idf values by using TfidfTransformer with the '.fit' method.</p>
+
+{% highlight python %}
+from sklearn.feature_extraction.text import TfidfTransformer
+tfidf_transformer = TfidfTransformer(smooth_idf=True, use_idf=True)
+tfidf_transformer.fit(corpus_vocab_count_matrix)
+{% endhighlight %}
+
+<p>To take a look at some of the idf values, they are put into a pandas data frame and sorted. </p>
+
+{% highlight python %}
+
+df_idf = pd.DataFrame(tfidf_transformer.idf_, index=cv.get_feature_names(), columns=['idf-weights'])
+df_idf = df_idf.sort_values(by=['idf-weights'])
+print(df_idf.head(10))
+
+{% endhighlight %}
+
+<p>This gives the following output: </p>
+
+<table style='width:100%'>
+    <tr>
+        <th> </th>
+        <th> idf-weights </th>
+    </tr>
+    <tr>
+        <td>reuters</td>
+        <td>1.000200</td>
+    </tr>
+    <tr>
+        <td>two</td>
+        <td>1.858122</td>
+    </tr>
+    <tr>
+        <td>we</td>
+        <td>1.862376</td>
+    </tr>
+    <tr>
+        <td>photo</td>
+        <td>1.867601</td>
+    </tr>
+    <tr>
+        <td>one</td>
+        <td>1.978532</td>
+    </tr>
+    <tr>
+        <td>state</td>
+        <td>2.032082</td>
+    </tr>
+    <tr>
+        <td>united states</td>
+        <td>2.275927</td>
+    </tr>
+    <tr>
+        <td>the united states</td>
+        <td>2.285644</td>
+    </tr>
+    <tr>
+        <td>week</td>
+        <td>2.317988</td>
+    </tr>
+    <tr>
+        <td>years</td>
+        <td>2.319484</td>
+    </tr>
+</table>
+
+<p>This makes sense as these are all extremely common named entities in reuters news articles.</p>
+
+<p>The tf-idf values then are found by multiplying the frequency of the named entities in the headline articles by the corresponding idf values. This gives, for each article, a vector of tf-idf values of length equal to the number of named entities among all the headline articles. </p>
+
+{% highlight python %}
+articles_vocab_count_matrix = cv1.transform(article_texts)
+tfidf_matrix = tfidf_transformer.transform(articles_vocab_count_matrix)
+{% endhighlight %}
+
+<p>These vectors can be thought of as a 'description' of each article in terms of the weighted importance of named entities in the article. To verify that the tf-idf vectors are reasonable, I use pandas to take a look at the top named entities in the first news article, a piece about the politics around Brexit. </p>
+
+{% highlight python %}
+df = pd.DataFrame(tfidf_array[0], index=cv1.get_feature_names(), columns=['tfidf'])
+df_descending = df.sort_values(by=['tfidf'], ascending=False)
+print(df_descending.head(5))
+{% endhighlight %}
+
+<p>This gives the following terms sorted by tf-idf values - it is clear that the tf-idf values are fitting.</p>
+
+<table style='width:100%'>
+    <tr>
+        <th> </th>
+        <th> tf-idf weights </th>
+    </tr>
+    <tr>
+        <td>brexit</td>
+        <td>0.524671</td>
+    </tr>
+    <tr>
+        <td>johnson</td>
+        <td>0.470051</td>
+    </tr>
+    <tr>
+        <td>benn</td>
+        <td>0.303351</td>
+    </tr>
+    <tr>
+        <td>benn act</td>
+        <td>0.227513</td>
+    </tr>
+    <tr>
+        <td>uk</td>
+        <td>0.217375</td>
+    </tr>
+</table>
+
+<h2 class="heading"> DBSCAN Clustering </h2>
+<p>The articles can then be clustered by the tf-idf vectors. As the data is unlabelled and there are an unknown number of clusters, I choose to use <a href='https://en.wikipedia.org/wiki/DBSCAN'>DBSCAN</a>, or Density-Based Spatial Clustering of Applications with Noise. This works by grouping together points that are close together while marking lone points as outliers. </p>
+
+<p>First pairwise comparisons of the tf-idf vectors must be performed to establish the distance between each article. Due to the very high-dimensional space the vectors are in, the curse of dimensionality ensures that Euclidean distance is a poor choice, so cosine similarity is selected because this suffers less. I use sklearn and scipy to build the distance array. </p>
+
+{% highlight python %}
+from sklearn.metrics import pairwise_distances
+from scipy.spatial.distance import cosine
+distance_array = pairwise_distances(tfidf_array, metric='cosine')
+{% endhighlight %}
+
+<p>Finally the DBSCAN algorithm is run on the pairwise distance array.</p>
+
+{% highlight python %}
+from sklearn.cluster import DBSCAN
+clustering = DBSCAN(eps=0.6, min_samples=2, metric='precomputed').fit(distance_array)
+{% endhighlight %}
+
+<p>The main parameter to set in the DBSCAN algorithm is 'eps' which represents the maximum distance between a pair of news articles for it to be considered that they are similar. Around 0.6 seems to work well - smaller values are too restrictive, while larger values start clustering articles too generously by, for example, including articles that simply mention the same places in passing. The final output is several groups of roughly 2-4 articles on the same topic, the result for articles scraped from October 4th are given below.</p>
+
+<p> 
+<strong>Paris attack</strong><br/>
+<a href ='https://www.theguardian.com/world/2019/oct/04/anti-terror-police-take-over-paris-knife-attack-case'>Anti-terror police take over Paris knife attack case</a><br/>
+<a href ='https://www.bbc.co.uk/news/world-europe-49937446'>Paris police killings: Investigation handed to anti-terror prosecutor</a><br/>
+<a href ='https://uk.reuters.com/article/uk-france-security/french-anti-terror-investigators-take-over-knife-rampage-probe-idUKKBN1WJ1LS'>French anti-terror investigators take over knife rampage probe</a><br/>
+</p>
+
+<p>
+<strong>Trump-Ukraine scandal</strong><br/>
+<a href ='https://www.nytimes.com/2019/10/04/us/politics/quid-pro-quo-trump.html'>Trump Denies Quid Pro Quo for Ukraine, but Envoys Had Their Doubts</a><br/>
+<a href ='https://uk.reuters.com/article/uk-usa-trump-whistleblower-ukr/in-texts-u-s-officials-tied-ukraine-white-house-meeting-to-help-for-trump-idUKKBN1WJ1W0?feedType=RSS&feedName=topNews&rpc=69'>House Democrats subpoena White House for documents in Trump impeachment probe</a><br/>
+<a href ='https://www.bbc.co.uk/news/world-us-canada-49930863'>Trump-Ukraine: Text messages show diplomat's alarm over plans</a><br/>
+</p>
+
+<p>
+<strong>Hong Kong protests</strong><br/>
+<a href ='https://www.bbc.co.uk/news/world-asia-china-49939173'>Hong Kong: Face mask ban prompts thousands to protest</a><br/>
+<a href ='https://uk.reuters.com/article/uk-hongkong-protests/teenager-shot-as-violence-flares-hours-after-hong-kong-imposes-emergency-powers-idUKKBN1WJ05S'>Teenager shot as violence flares hours after Hong Kong imposes emergency powers</a><br/>
+</p>
