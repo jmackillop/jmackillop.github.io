@@ -159,4 +159,4 @@ $$\begin{equation*}
 
 This completes the proof.
 
-This result essentially implies that the price, over a relatively long time frame $$[0, tn \log n]$$, of the order of minutes say, behaves diffusively, with a coefficient of diffusion given by $$\delta \sqrt{n\pi\lambda / D(f)}$$. This value represents the price variance, and so, in theory at least, we can use this to estimate the price volatility <i>without observing the price itself</i>. In <a href='https://jmackillop.ml/projects/lob-part2'>part 2</a>, we will take a look at whether this holds up in practice.
+This result essentially implies that the price, over a relatively long time frame $$[0, tn \log n]$$, of the order of minutes say, behaves diffusively, with a coefficient of diffusion given by $$\delta \sqrt{n\pi\lambda / D(f)}$$. This value represents the price variance, and so, in theory at least, we can use this to estimate the price volatility <i>without observing the price itself</i>. In <a href='https://jmackillop.github.io/projects/lob-part2'>part 2</a>, we will take a look at whether this holds up in practice.
