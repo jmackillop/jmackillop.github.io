@@ -9,7 +9,7 @@ categories: stochastic-modelling limit-order-book data
 <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
 
 <p><i>This is the fourth in a series of posts looking at modelling limit order books. In this post we investigate the order sizing distribution using our data. 
-For the other parts of this series, see <a href='httsp://jmackillop.ml/projects/lob-part1'>Part 1 </a>, <a href='httsp://jmackillop.ml/projects/lob-part2'>Part 2</a>, <a href='httsp://jmackillop.ml/projects/lob-part2'>Part 3</a>
+For the other parts of this series, see <a href='https://jmackillop.github.io/projects/lob-part1'>Part 1 </a>, <a href='https://jmackillop.github.io/projects/lob-part2'>Part 2</a>, <a href='https://jmackillop.github.io/projects/lob-part2'>Part 3</a>
 </i></p>
 
 <p>In this part we investigate the distribution of the order sizes. We perform exploratory analysis, and then rigorously test a power law hypothesis. <a href='#pla'>Jump to power law analysis.</a></p>
