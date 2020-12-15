@@ -8,7 +8,8 @@ layout: default
 	<h1 class="post-title">Hi there! I'm James MacKillop...</h1>
 </header>
 <div class="blurb">
-	<p>This site has a few of my projects, mostly with a data science flavour, as well as a bit about me.</p>
-	<p>To get in touch see the footer for my details. I'm a maths & statistics student at Oxford University.<a href="/about"> Read more about me... </a></p>
+	<p>This site has a few of my projects, which are primarily focussed on software, statistics, and econometrics, as well as a bit about me.</p>
+	<p>Following an acquisition, I'm now working as an engineer at Microsoft on cloud-native distributed software.<a href="/about"> Read more about me... </a></p>
 	<p>To check out some of my projects, see the <a href="/projects">projects</a> page.</p>
+	<p>To get in touch see the footer for my details. Please note I unfortunately can't respond to all correspondence.</p>
 </div>
